@@ -22,3 +22,11 @@ API → Airflow → MinIO → Iceberg → Trino → dbt → Superset
 - Trino
 - dbt
 - Apache Superset
+
+## Storage layout
+
+MinIO is used as local S3-compatible object storage.
+
+Buckets:
+
+- `raw` — raw data ingested from external APIs
