@@ -21,6 +21,17 @@ services:
     volumes:
       - minio_data:/data
 
+  trino:
+    image: trinodb/trino:latest
+    container_name: lakehouse-trino
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./docker/trino/etc:/etc/trino
+    depends_on:
+      - minio
+      - postgres
+
 volumes:
   postgres_data:
   minio_data:
