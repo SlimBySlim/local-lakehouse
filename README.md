@@ -23,6 +23,12 @@ API → Airflow → MinIO → Iceberg → Trino → dbt → Superset
 - dbt
 - Apache Superset
 
+## Architecture:
+- MinIO as object storage
+- Trino as query engine
+- Iceberg as table format
+- PostgreSQL as JDBC catalog
+
 ## Storage layout
 
 MinIO is used as local S3-compatible object storage.
