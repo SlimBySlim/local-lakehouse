@@ -1,0 +1,25 @@
+version: 2
+
+sources:
+  - name: crypto_raw
+    database: iceberg
+    schema: crypto
+    tables:
+      - name: btcusdt_klines
+        description: Raw BTCUSDT 1m klines loaded from Bybit into Iceberg.
+        columns:
+          - name: timestamp
+            tests:
+              - not_null
+          - name: symbol
+            tests:
+              - not_null
+          - name: interval
+            tests:
+              - not_null
+          - name: close
+            tests:
+              - not_null
+          - name: volume
+            tests:
+              - not_null
