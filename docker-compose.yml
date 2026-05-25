@@ -67,6 +67,8 @@ services:
       - ./scripts:/opt/airflow/scripts
       - ./data:/opt/airflow/data
       - ./logs/airflow:/opt/airflow/logs
+      - ./dbt:/opt/airflow/dbt
+      - ./dbt/profiles.yml:/home/airflow/.dbt/profiles.yml
     command: >
       bash -c "
       airflow db migrate &&

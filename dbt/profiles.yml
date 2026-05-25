@@ -1,0 +1,13 @@
+local_lakehouse:
+  target: dev
+
+  outputs:
+    dev:
+      type: trino
+      method: none
+      user: airflow
+      host: trino
+      port: 8080
+      database: iceberg
+      schema: crypto
+      threads: 4

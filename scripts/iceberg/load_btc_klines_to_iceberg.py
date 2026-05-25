@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 import boto3
@@ -19,9 +19,18 @@ TRINO_USER = os.getenv("TRINO_USER", "airflow")
 SYMBOL = "btcusdt"
 INTERVAL = "1m"
 
+STAGING_TABLE = "iceberg.crypto.btcusdt_klines_staging"
+FINAL_TABLE = "iceberg.crypto.btcusdt_klines"
 
+def get_target_date() -> datetime:
+    data_date = os.getenv("DATA_DATE")
+
+    if not data_date:
+        raise ValueError("DATA_DATE environment variable is required")
+
+    return datetime.strptime(data_date, "%Y-%m-%d")
 def get_target_s3_key() -> str:
-    target_date = datetime.utcnow() - timedelta(days=1)
+    target_date = get_target_date()
 
     return (
         f"crypto/{SYMBOL}/klines/"
@@ -84,9 +93,9 @@ def create_schema_and_table(cursor) -> None:
     )
 
 
-def insert_dataframe(cursor, df: pd.DataFrame) -> None:
-    insert_sql = """
-        INSERT INTO iceberg.crypto.btcusdt_klines (
+def insert_dataframe(cursor, df: pd.DataFrame, target_table: str) -> None:
+    insert_sql = f"""
+        INSERT INTO {target_table} (
             timestamp,
             symbol,
             category,
@@ -122,6 +131,43 @@ def insert_dataframe(cursor, df: pd.DataFrame) -> None:
     print(f"Inserting {len(rows)} rows into Iceberg table")
     cursor.executemany(insert_sql, rows)
 
+def recreate_staging_table(cursor) -> None:
+    cursor.execute(f"DROP TABLE IF EXISTS {STAGING_TABLE}")
+
+    cursor.execute(f"""
+        CREATE TABLE {STAGING_TABLE} (
+            timestamp TIMESTAMP(6),
+            symbol VARCHAR,
+            category VARCHAR,
+            interval VARCHAR,
+            open DOUBLE,
+            high DOUBLE,
+            low DOUBLE,
+            close DOUBLE,
+            volume DOUBLE,
+            turnover DOUBLE
+        )
+        WITH (
+            format = 'PARQUET'
+        )
+    """)
+
+def insert_from_staging_to_final(cursor) -> None:
+    cursor.execute(f"""
+        INSERT INTO {FINAL_TABLE}
+        SELECT
+            timestamp,
+            symbol,
+            category,
+            interval,
+            open,
+            high,
+            low,
+            close,
+            volume,
+            turnover
+        FROM {STAGING_TABLE}
+    """)
 
 def main() -> None:
     s3_key = get_target_s3_key()
@@ -137,7 +183,11 @@ def main() -> None:
     cursor = conn.cursor()
 
     create_schema_and_table(cursor)
-    insert_dataframe(cursor, df)
+    recreate_staging_table(cursor)
+    insert_dataframe(cursor, df, target_table=STAGING_TABLE)
+    insert_from_staging_to_final(cursor)
+
+    cursor.execute(f"DROP TABLE IF EXISTS {STAGING_TABLE}")
 
     print("Data successfully loaded to Iceberg")
 
