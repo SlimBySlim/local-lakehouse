@@ -6,3 +6,4 @@ python-dotenv
 trino
 dbt-core
 dbt-trino
+pyspark==4.1.2

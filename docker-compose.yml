@@ -32,6 +32,18 @@ services:
       - minio
       - postgres
 
+  spark:
+    image: apache/spark:4.1.2-python3
+    container_name: lakehouse-spark
+    env_file:
+      - .env
+    environment:
+      HOME: /tmp
+      IVY_HOME: /tmp/.ivy2
+    volumes:
+      - ./spark_jobs:/opt/spark_jobs
+    command: ["tail", "-f", "/dev/null"]
+
   airflow-postgres:
     image: postgres:16
     container_name: lakehouse-airflow-postgres
@@ -69,6 +81,7 @@ services:
       - ./logs/airflow:/opt/airflow/logs
       - ./dbt:/opt/airflow/dbt
       - ./dbt/profiles.yml:/home/airflow/.dbt/profiles.yml
+      - ./spark_jobs:/opt/airflow/spark_jobs
     command: >
       bash -c "
       airflow db migrate &&

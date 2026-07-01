@@ -45,7 +45,16 @@ def btc_ingestion_pipeline():
         """,
     )
 
-    ingest_btc_data >> load_to_iceberg >> validate_iceberg_load >> run_dbt_models
+    spark_batch_ingest = BashOperator(
+        task_id="spark_batch_ingest",
+        bash_command=(
+            "python /opt/airflow/spark_jobs/batch_ingest_crypto.py "
+            "--date {{ ds }}"
+        ),
+    )
+
+
+    ingest_btc_data >> spark_batch_ingest >> validate_iceberg_load >> run_dbt_models
 
 
 btc_ingestion_pipeline()
